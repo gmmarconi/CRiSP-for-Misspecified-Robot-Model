@@ -17,7 +17,6 @@ import configparser
 import argparse
 import torch
 import tempfile
-import matplotlib.pyplot as plt
 import itertools
 from numpy.random import default_rng
 

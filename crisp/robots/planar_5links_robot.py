@@ -7,7 +7,6 @@ from matplotlib import colors
 import itertools
 from tqdm import tqdm
 from crisp.utils.planar_utils import sqdist, radial_squared_error
-from crisp.utils.data_utils import make_gif
 import pybullet as p
 import pybullet_data as pd
 

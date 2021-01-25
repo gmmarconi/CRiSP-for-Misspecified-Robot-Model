@@ -35,9 +35,9 @@ robot or on the planar manipulator.
 Both scripts read a configuration file (two samples of which are in the
   corresponding folder) and perform the experiment accordingly.
 
-To launch the script, use:
+To launch the script, change directory to `experiments script` and use:
 
- `$ python experiments/synthetic_data_experiment.py -config path/to/config.ini`
+ `$ python planar manipulator demo.py -config path/to/config.ini`
 
 Where `config.ini` is a configuration file defining the experiment details.
 
