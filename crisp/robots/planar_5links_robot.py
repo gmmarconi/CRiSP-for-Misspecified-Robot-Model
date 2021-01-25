@@ -137,30 +137,6 @@ class planar_5links_robot(object):
 
         return attained_joints_configuration
 
-    def get3DEndEffectorPose(self):
-        """
-        Returns the end-effector pose corresponding to the current joint configuration.
-
-        Parameters:
-            None
-
-        Returns:
-            ee_pos: a numpy array containing the 3D position of the end effector with respect to the world frame
-            ee_orn: a numpy array containing the orientation of the end effector with respect to the world frame, expressed in Euler angles
-        """
-
-        # Initialize np arrays to be filled and returned
-        ee_pos = np.nan * np.zeros([1, 3])
-        ee_orn = np.nan * np.zeros([1, 3])
-
-        # Get position and orientation of the end effector link
-        ee_state = self.bullet_client.getLinkState(self.robot_id,
-                                                   self._end_effector_index,
-                                                   computeForwardKinematics=True)
-        ee_pos = np.array(ee_state[4])
-        ee_orn = np.array(self.bullet_client.getEulerFromQuaternion(np.array(ee_state[5]).tolist()))
-
-        return ee_pos, ee_orn
 
     def computeForwardKinematics(self, joint_configurations):
         """
@@ -266,8 +242,7 @@ class planar_5links_robot(object):
                         plot_bias=False,
                         id_string=None,
                         save_svg=False,
-                        giffable=False,
-                        timestring=None):
+                        giffable=False):
         """
         Reconstruct a sequence of orientations in space (a trajectory), one at a time by
         predicting the joint configuration with the supplied model
@@ -324,15 +299,7 @@ class planar_5links_robot(object):
             # plt.show()
 
         else:
-            print("Producing gif frames...")
-            for idx, (prediction, test_point, jp) in enumerate(zip(predictions, trajectory, joints_pos)):
-                f = self.plot_arm(jp, f, c_links='red', ls='-', alpha=0.2)
-                if idx == 0:  # put a label on red markers
-                    f.scatter(X_hat, Y_hat, c='red', zorder=1, s=140, edgecolor='k', label='Predicted trajectory')
-                else:
-                    f.scatter(X_hat, Y_hat, c='red', zorder=2, s=180, edgecolor='k')
-                plt.savefig(output_folder / f'giffy/frame_{idx:08d}')
-            print("...gif frames completed!")
+            f = self.make_gif_frame(joints_pos, poses, f, output_folder / 'giffy')
 
         plt.legend()
         if id_string:
@@ -380,7 +347,7 @@ class planar_5links_robot(object):
         :param traj_name: name of the trajectory for visualization purposes
         """
         if giffable:
-            (output_folder / 'giffy_inv_pb').mkdir(exist_ok=True, parents=True)
+            (output_folder / 'giffy_pb').mkdir(exist_ok=True, parents=True)
         traj_pts = trajectory.shape[0]
         # Plot circle
         fig = plt.figure( figsize=(9,7))
@@ -396,9 +363,6 @@ class planar_5links_robot(object):
         plt.xlim([x_min, x_max])
         plt.ylim([y_min, y_max])
 
-        penalty = 0
-        rounds = 0
-        q = 0
         misses = 0
         wrong_pts = []
 
@@ -408,45 +372,23 @@ class planar_5links_robot(object):
             Error_bias = np.zeros((traj_pts, 3), float)
 
         predictions = self.computeInverseKinematics(trajectory)
+        poses = true_kinematics_model.computeForwardKinematics(predictions)
+        X_hat = poses[:, 0]
+        Y_hat = poses[:, 1]
+        theta_hat = poses[:, 2]
+
+        Error[:, :2] = np.abs(trajectory[:, :2] - np.atleast_2d([X_hat, Y_hat]).T)
+        Error[:, 2] = np.amin([np.abs(trajectory[:, 2] - theta_hat),
+                               2 * np.pi - np.abs(trajectory[:, 2] - theta_hat)])
+        joints_pos = true_kinematics_model.get_joints_and_ee_pos_pb(predictions)
 
         if not giffable:
-            poses = true_kinematics_model.computeForwardKinematics(predictions)
-            X_hat = poses[:, 0]
-            Y_hat = poses[:, 1]
-            theta_hat = poses[:, 2]
-
-            Error[:, :2] = np.abs(trajectory[:, :2] - np.atleast_2d([X_hat, Y_hat]).T)
-            Error[:, 2] = np.amin([np.abs(trajectory[:, 2] - theta_hat),
-                                     2 * np.pi - np.abs(trajectory[:, 2] - theta_hat)])
-            joints_pos = true_kinematics_model.get_joints_and_ee_pos_pb(predictions)
             f = self.plot_multiple_arms(joints_pos, f, c_links='red', ls='-', alpha=0.2)
             f.scatter(X_hat[0], Y_hat[0], c='red', zorder=1, s=140, edgecolor='k', label='Predicted trajectory')
             f.scatter(X_hat[1:], Y_hat[1:], c='red', zorder=2, s=180, edgecolor='k')
 
         else:
-            for idx, (prediction, test_point) in enumerate(zip(predictions, trajectory)):
-
-                if not self.check_if_inside_boundaries(prediction)[0]:
-                    misses += 1
-                    wrong_pts.append(idx)
-
-                poses = true_kinematics_model.computeForwardKinematics(prediction)
-                X_hat = poses[:, 0]
-                Y_hat = poses[:, 1]
-                theta_hat = poses[:, 2]
-
-                Error[idx, :2] = np.abs(test_point[:2] - np.atleast_2d([X_hat, Y_hat]).T)
-                Error[idx, 2] = np.amin([np.abs(test_point[2]-theta_hat),
-                                       2*np.pi-np.abs(test_point[2]-theta_hat)])
-                Qs_hat[idx] = prediction
-                joints_pos = np.squeeze(true_kinematics_model.get_joints_and_ee_pos_pb(prediction))
-                f = self.plot_arm(joints_pos, f, c_links='red', ls='-', alpha=0.2)
-
-                if idx == 0:  # put a label on red markers
-                    f.scatter(X_hat, Y_hat, c='red', zorder=1, s=140, edgecolor='k', label='Predicted trajectory')
-                else:
-                    f.scatter(X_hat, Y_hat, c='red', zorder=2, s=180, edgecolor='k')
-                plt.savefig(output_folder / f'giffy_inv_pb/frame_{idx:08d}')
+            f = self.make_gif_frame(joints_pos, poses, f, output_folder / 'giffy_pb')
 
         # if fig_text is not None:
         #     plt.plot([], [], ' ', label=fig_text)
@@ -682,13 +624,13 @@ class planar_5links_robot(object):
                 # plot links
                 f.plot([0, extr[idx, 0]], [0, extr[idx, 1]], c=c_links, **kwargs)
                 # plot joints
-                f.scatter(extr[idx, 0], extr[idx, 1],  marker='s', c=c_joints, alpha=1)
+                f.scatter(extr[idx, 0], extr[idx, 1],  marker='s', c=c_joints, alpha=0.4)
             else:
                 #plot links
                 f.plot([extr[idx-1, 0], extr[idx, 0]],
                        [extr[idx-1, 1], extr[idx, 1]], '-', c=c_links, **plot_args)
                 # plot joints
-                f.scatter(extr[idx, 0], extr[idx, 1], marker='o', c=c_joints, alpha=1, zorder=2)
+                f.scatter(extr[idx, 0], extr[idx, 1], marker='o', c=c_joints, zorder=2, alpha=0.4)
         return f
 
     @staticmethod
@@ -803,3 +745,20 @@ class planar_5links_robot(object):
 
         return fig, ax
 
+    def make_gif_frame(self, joint_positions, ee_positions, figure, gif_folder):
+        print("Producing gif frames...")
+        for idx, jp in enumerate(joint_positions):
+            figure = self.plot_arm(jp, figure, c_links='red', ls='-', alpha=0.2)
+
+            if idx == 0:  # put a label on red markers
+                figure.scatter(ee_positions[idx, 0], ee_positions[idx, 1], c='red', zorder=1, s=140, edgecolor='k',
+                               alpha=0.3, label='Predicted trajectory')
+            else:
+                figure.scatter(ee_positions[idx, 0], ee_positions[idx, 1], c='red', zorder=2, s=180, edgecolor='k',
+                               alpha=0.3)
+            plt.legend()
+            plt.savefig(gif_folder / f'frame_{idx:08d}')
+
+        print("...gif frames completed!")
+
+        return figure

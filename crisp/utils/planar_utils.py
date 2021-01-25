@@ -339,3 +339,5 @@ def plot_dataset(xtr, ytr, traj, planar_manip, output_folder):
     plt.savefig(output_folder / f'dataset.png', format='png')
     plt.show()
     plt.close(fig_dset)
+
+

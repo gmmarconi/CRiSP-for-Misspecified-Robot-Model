@@ -4,17 +4,15 @@ import matplotlib.pyplot as plt
 import logging
 
 
-def make_gif(source_folder, output_folder, save_name=None):
+def make_gif(gif_folder, save_name=None):
     """ Collects numbered images from folder called "giffy" and makes a gif with save_name in output_folder """
     images_buffer = []
-    gif_path = source_folder
-    gif_path.mkdir(parents=True, exist_ok=True)
-    for filename in sorted([f for f in (output_folder / gif_path).glob('**/*') if f.is_file()]):
+    for filename in sorted([f for f in (gif_folder).glob('**/*') if f.is_file()]):
         if filename.suffix == '.png':
             images_buffer.append(imageio.imread(filename))
     if save_name is None:
         save_name = 'reconstructed_trajectory'
-    imageio.mimwrite(output_folder / (save_name+'.gif'), images_buffer, fps=7) #, format='GIF-FI')
+    imageio.mimwrite(gif_folder.parent / (save_name+'.gif'), images_buffer, fps=7) #, format='GIF-FI')
 
 
 def set_plt_params():

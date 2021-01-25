@@ -316,11 +316,14 @@ for rep in range(reps):
                                                                     output_folder=output_folder,
                                                                     traj_name=traj_name,
                                                                     id_string=f"{timestring}",
-                                                                    plot_bias=plot_bias)
+                                                                    plot_bias=plot_bias,
+                                                                    giffable=config['Outputs'].getboolean('make_gif'))
 
-        if config['Outputs'].getboolean('make_gif'):
+        if config['Outputs'].getboolean('make_gif') and rep == 0:
             # make_gif(Path(f'alpha_plots/{timestring}_s{str(s)}'), output_folder, save_name=f"alphas_{timestring}_s{str(s)}")
-            make_gif(Path(f'giffy'), output_folder, save_name=f"Reconstructed with {alg}- {timestring}")
+            make_gif(output_folder / 'giffy', save_name=f"Reconstructed with {alg} - {timestring}")
+            make_gif(output_folder / 'giffy_pb', save_name=f"Reconstructed with PyBullet - {timestring}")
+
 
         print_trajectory_results(alg, results, s, v, log.info)
 

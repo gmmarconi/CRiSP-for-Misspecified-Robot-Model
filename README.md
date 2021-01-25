@@ -4,29 +4,35 @@ Repository for Structured  Prediction  for  CRiSP  Inverse  Kinematics  Learning
 
 Tested on Ubuntu 20.04
 
+>**Abstract**
+>
+> With the recent advances in machine learning, problems that traditionally would require accurate modeling to be solved analytically can now be successfully approached with data-driven strategies. Among these, computing the inverse kinematics of a redundant robot arm poses a significant challenge due to the non-linear structure of the robot, the hard joint constraints and the non-invertible kinematics map. Moreover, most learning algorithms consider a completely data-driven approach, while often useful information on the structure of the robot is available and should be positively exploited.
+In this work, we present a simple, yet effective, approach for learning the inverse kinematics. We introduce a structured prediction algorithm that combines a data-driven strategy with the model provided by a forward kinematics function -- even when this function is inaccurate -- to efficiently tackle the problem. The proposed approach ensures that predicted joint configurations are well within the robot's constraints. We also provide statistical guarantees on the generalization properties of our estimator as well as an empirical evaluation of its performance on trajectory reconstruction tasks.
+
+
 ## Environment set-up
 
 We recommend using Anaconda for managing your environments
 
 ```
-wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
-chmod +x Anaconda3-2020.07-Linux-x86_64.sh
-./Anaconda3-2020.07-Linux-x86_64.sh
+$ wget https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
+$ chmod +x Anaconda3-2020.07-Linux-x86_64.sh
+$ ./Anaconda3-2020.07-Linux-x86_64.sh
 ```
 
 Note: Specify a custom directory for Anaconda with enough disk space.
 
 To install the Anaconda environment for this project, run in the shell
 
-`conda env create -f ik_struct.yml`
+`$ conda env create -f environment.yml`
 
 activate it with
 
-`conda activate inverkin_struct`
+`$ conda activate inverkin_struct`
 
 and verify it is correctly installed
 
-`conda env list`
+`$ conda env list`
 
 ## How to run sample experiments
 
