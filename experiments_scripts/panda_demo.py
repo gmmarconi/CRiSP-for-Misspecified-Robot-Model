@@ -207,7 +207,7 @@ for rep in range(reps):
     link_bias = np.ones((9,3)) * bias_length
     link_bias *= np.sign(rng.random((9,3)) - 0.5)
     link_bias = tuple(map(tuple, link_bias))
-    handle, model_file = tempfile.mkstemp(dir='./crisp/robots/urdf')
+    handle, model_file = tempfile.mkstemp(dir='../crisp/robots/urdf')
 
     with open(handle, 'w') as f:
         f.write(generate_custom_urdf(joint_bias, link_bias))
