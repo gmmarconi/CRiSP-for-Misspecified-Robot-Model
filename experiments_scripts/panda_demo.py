@@ -1,5 +1,5 @@
 import sys
-sys.path.extend(['.'])
+sys.path.extend(['..'])
 import os
 import seaborn; seaborn.set()
 from pathlib import Path
