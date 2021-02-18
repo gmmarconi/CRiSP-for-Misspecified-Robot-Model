@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from numpy.random import default_rng
+from crisp.utils.planar_utils import radial_squared_error
 
 def generate_circumference(center, radius, num_points):
     """
