@@ -174,3 +174,80 @@ def compute_rmse(trajectory_1, trajectory_2):
     #               )
 
     return rmse
+
+
+def predict_panda_trajectory_CRiSP(xte, invert_kin, forward, out, s, v, alg):
+
+    predictions, data = invert_kin(xte, is_sequence=True)
+
+    # Compare results on test set
+    reconstructed = forward(predictions)
+    error = np.full((xte.shape), np.inf)
+
+    error[:,:3] = np.sqrt((reconstructed[:, :3] - xte[:, :3])**2)
+    error[:, 3:] = np.sqrt(radial_squared_error(reconstructed[:, 3:], xte[:, 3:]))
+
+    rmse_orientation = np.mean(np.sum(error[:, 3:], axis=1))
+    var_orientation = np.std(np.sum(error[:, 3:], axis=1))
+
+    rmse_position = np.mean(np.sum(error[:, :3], axis=1))
+    var_position = np.std(np.sum(error[:, :3], axis=1))
+
+    rmse = np.mean(np.sum(error, axis=1))
+    var = np.std(np.sum(error, axis=1))
+
+    out(f"\nAlgorithm: {alg}")
+    results =   {'rmse_orientation': rmse_orientation,
+                'var_orientation': var_orientation,
+                'rmse_position': rmse_position,
+                'var_position': var_position,
+                'rmse': rmse,
+                'var': var,
+                'xte': xte,
+                'alpha': data['alpha'],
+                'Kx': data['Kx'],
+                'trajectory_pos': reconstructed[:, :3],
+                'trajectory_orn': reconstructed[:, 3:],
+                'trajectory_joints_pred_CRiSP': predictions}
+
+    out(f"s: {s}\t v: {v}")
+    out(f"\t\tRMSE ori: {results['rmse_orientation']:7.6f} ± {results['var_orientation']:7.6f}")
+    out(f"\t\tRMSE pos: {results['rmse_position']:7.6f} ± {results['var_position']:7.6f}\n"
+             f"\t\tRMSE: {results['rmse']:7.6f} ± {results['var']:7.6f}")
+    out(f"Norm of alphas = {np.linalg.norm(data['alpha'])}")
+
+    return results
+
+def predict_panda_trajectory_PB(xte, invert_kin, forward, out, s, v, alg):
+
+    predictions = invert_kin(xte)
+
+    # Compare results on test set
+    reconstructed = forward(predictions)
+    error = np.full((xte.shape), np.inf)
+
+    error[:,:3] = np.sqrt((reconstructed[:, :3] - xte[:, :3])**2)
+    error[:, 3:] = np.sqrt(radial_squared_error(reconstructed[:, 3:], xte[:, 3:]))
+
+    rmse_orientation = np.mean(np.sum(error[:, 3:], axis=1))
+    var_orientation = np.std(np.sum(error[:, 3:], axis=1))
+
+    rmse_position = np.mean(np.sum(error[:, :3], axis=1))
+    var_position = np.std(np.sum(error[:, :3], axis=1))
+
+    rmse = np.mean(np.sum(error, axis=1))
+    var = np.std(np.sum(error, axis=1))
+
+    out(f"\nAlgorithm: PyBullet Inverse Kinematics")
+    results = {'rmse_orientation': rmse_orientation, 'var_orientation': var_orientation,
+                'rmse_position': rmse_position, 'var_position': var_position,
+                'rmse': rmse, 'var': var, 'xte': xte, 'predictions': predictions,
+               'trajectory_PyBullet_IK_reference_joints': predictions,
+               'trajectory_pos_ikpb': reconstructed[:, :3],
+               'trajectory_orn_ikpb': reconstructed[:, 3:],
+               }
+    out(f"\t\tRMSE ori: {results['rmse_orientation']:7.6f} ± {results['var_orientation']:7.6f}")
+    out(f"\t\tRMSE pos: {results['rmse_position']:7.6f} ± {results['var_position']:7.6f}\n"
+             f"\t\tRMSE: {results['rmse']:7.6f} ± {results['var']:7.6f}")
+
+    return results

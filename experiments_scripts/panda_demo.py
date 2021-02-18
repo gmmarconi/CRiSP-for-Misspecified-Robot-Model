@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 from crisp.algorithms.NN import fc_nn
 from crisp.utils.planar_utils import print_avg_distances_on_dataset
-from crisp.utils.planar_utils import predict_panda_trajectory_CRiSP, predict_panda_trajectory_PB
+from crisp.utils.panda_utils import predict_panda_trajectory_CRiSP, predict_panda_trajectory_PB
 from crisp.utils.data_utils import set_plt_params, set_logger
 from crisp.algorithms.CRiSPIK import CRiSPIK
 from crisp.algorithms.OneClassSSVM import OneClassSSVM
@@ -249,13 +249,13 @@ for rep in range(reps):
                 while "The answer is invalid":
                     res = str(input("WARNING: The number of training points is n = " + str(xtr.shape[0]) + ". Training will require " + str(xtr.shape[0] ** 2 * 8) + " Bytes in RAM to compute the kernel matrix. Do you want to continue? (Enter y/n) ")).lower().strip()
                     if res[:1] == 'y':
+                        print("Training...")
                         model.fit(X=xtr, y=ytr,
                                   falkon=falkon_flag,
                                   Xte=xte,
                                   leverage_scores=config['Alg Params'].getboolean('leverage_scores'),
                                   out=log.info,
                                   krls_flag=krls_flag)
-                        print("Training...")
                         break
 
                     elif res[:1] == 'n':
