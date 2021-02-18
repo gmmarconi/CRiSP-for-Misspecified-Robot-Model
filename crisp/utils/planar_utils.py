@@ -82,7 +82,7 @@ def predict_panda_trajectory(xte, model, forward, out, s, v, alg):
     out(f"Algorithm: {alg}")
 
 
-def predict_save_panda_trajectory_CRiSP(xte, invert_kin, forward, out, s, v, alg):
+def predict_panda_trajectory_CRiSP(xte, invert_kin, forward, out, s, v, alg):
 
     predictions, data = invert_kin(xte, is_sequence=True)
 
@@ -103,12 +103,18 @@ def predict_save_panda_trajectory_CRiSP(xte, invert_kin, forward, out, s, v, alg
     var = np.std(np.sum(error, axis=1))
 
     out(f"\nAlgorithm: {alg}")
-    results = {'rmse_orientation': rmse_orientation, 'var_orientation': var_orientation,
-                'rmse_position': rmse_position, 'var_position': var_position,
-                'rmse': rmse, 'var': var, 'xte': xte, 'predictions': predictions,
-                'alpha': data['alpha'], 'Kx': data['Kx'],
-               'trajectory_pos': reconstructed[:, :3], 'trajectory_orn': reconstructed[:, 3:],
-               'trajectory_joints': predictions}
+    results =   {'rmse_orientation': rmse_orientation,
+                'var_orientation': var_orientation,
+                'rmse_position': rmse_position,
+                'var_position': var_position,
+                'rmse': rmse,
+                'var': var,
+                'xte': xte,
+                'alpha': data['alpha'],
+                'Kx': data['Kx'],
+                'trajectory_pos': reconstructed[:, :3],
+                'trajectory_orn': reconstructed[:, 3:],
+                'trajectory_joints_pred_CRiSP': predictions}
 
     out(f"s: {s}\t v: {v}")
     out(f"\t\tRMSE ori: {results['rmse_orientation']:7.6f} ± {results['var_orientation']:7.6f}")
@@ -118,7 +124,7 @@ def predict_save_panda_trajectory_CRiSP(xte, invert_kin, forward, out, s, v, alg
 
     return results
 
-def predict_save_panda_trajectory_PB(xte, invert_kin, forward, out, s, v, alg):
+def predict_panda_trajectory_PB(xte, invert_kin, forward, out, s, v, alg):
 
     predictions = invert_kin(xte)
 

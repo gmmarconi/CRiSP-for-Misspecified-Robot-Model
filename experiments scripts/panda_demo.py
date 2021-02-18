@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 from crisp.algorithms.NN import fc_nn
 from crisp.utils.planar_utils import print_avg_distances_on_dataset
-from crisp.utils.planar_utils import predict_save_panda_trajectory_CRiSP, predict_save_panda_trajectory_PB
+from crisp.utils.planar_utils import predict_panda_trajectory_CRiSP, predict_panda_trajectory_PB
 from crisp.utils.data_utils import set_plt_params, set_logger
 from crisp.algorithms.CRiSPIK import CRiSPIK
 from crisp.algorithms.OneClassSSVM import OneClassSSVM
@@ -25,28 +25,14 @@ import pybullet as p
 import pybullet_data as pd
 from numpy.random import default_rng
 
-# def psi(x):
-#     """ Feature map """
-#     return np.hstack((x[:, :3]*20,  # x[:, :3]*20
-#                       x[:, :3]**2,
-#                       x[:, 3:],
-#                       np.atleast_2d(np.sin(x[:, 2])).T, np.atleast_2d(np.cos(x[:, 2])).T))
-# pos_dimensions = 6
-
-# Raw features
-# def psi(x):
-#   return x
-
-# Rescaled EE positions
+# Rescale EE positions
 def psi(x):
     return np.hstack((x[:, :3]*20,
                       x[:, 3:]))
 
-
 pos_dimensions = 3
 save_alpha = False
 save_Kx = False
-
 
 timestring = datetime.datetime.now().strftime(time_format)
 
@@ -75,7 +61,6 @@ if config.has_option('Experiment', 'gpu'):
 else:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# TODO: plot trajectory on dataset, use dataset from whole workspace instead of around traj, compare, croval
 set_plt_params()
 
 #%% ------Parse config parameters------ #
@@ -121,17 +106,12 @@ if config.has_option('Alg Params', 'loss_structure'):
 else:
     print(f"Please provide a loss structure type")
     sys.exit()
-save_matlab_flag = config.has_option('Data', 'save_matlab')
-if save_matlab_flag:
-    matlab_plots_data_fname = Path(config['Data']['save_matlab'])
-
 
 krls_flag = config['Experiment'].getboolean('krls')
 falkon_flag = config['Alg Params'].getboolean('falkon')
 train_flag = config['Experiment'].getboolean('train')
-analyze_preds = config['Outputs'].getboolean('analyze_preds')
 plot_hist_flag = config['Data'].getboolean('histograms')
-save_model_flag = config['Data'].getboolean('save_model')
+save_model_flag = config['Outputs'].getboolean('save_model')
 
 #%% ------Create/load Dataset------#
 
@@ -149,13 +129,6 @@ if config['Experiment'].getboolean('reconstruct_trajectory'):
 
     results_CRiSP = {}
     results_PB = {}
-
-    # 3D Circumference - Dataset: Donut v0.6
-    # num_points = 200
-    #
-    # xte['zero'] = panda_fk.generate_trajectory(0, num_points)
-    # xte['-pi/4'] = panda_fk.generate_trajectory(-np.pi/4, num_points)
-    # xte['+pi/4'] = panda_fk.generate_trajectory(+np.pi/4, num_points)
 
     # 3D Spiral - Dataset: Medium Cube v0.2
     orn = 0	# Yaw orientation
@@ -200,7 +173,6 @@ if config['Data'].getboolean('compute_distance_statistics'):
                                    out=log.info)
 log.info(f"Loaded dataset: {xtr.shape[0]} training points")
 
-
 #%% ---------Initiaize pybullet sim------------ #
 p.connect(p.DIRECT)
 p.setAdditionalSearchPath(pd.getDataPath())
@@ -210,8 +182,9 @@ p.setGravity(0, 0, 0)
 num_sim_steps = 5000
 rest_configuration = [0., 1.5708, 0., 4.7124, 0.]
 base_orientation = [-0.707107, 0.0, 0.0, 0.707107]
+
 # Instantiate simulated Panda object with
-base_offset = [0, 0, 0]		# Base position offset [0,0,0] (meters)
+base_offset = [0, 0, 0]		# Base position offset (meters)
 use_simulation = False		# Do not simulate the physics of the step or force new configuration
 
 MMAE_orientation, MMAE_position = [], []
@@ -234,12 +207,12 @@ for rep in range(reps):
     link_bias = np.ones((9,3)) * bias_length
     link_bias *= np.sign(rng.random((9,3)) - 0.5)
     link_bias = tuple(map(tuple, link_bias))
-    handle, model_file = tempfile.mkstemp(dir='./experiments/panda_sandbox/urdf')
+    handle, model_file = tempfile.mkstemp(dir='./crisp/robots/urdf')
 
     with open(handle, 'w') as f:
         f.write(generate_custom_urdf(joint_bias, link_bias))
 
-    # Prepare the pandasim object
+    # Prepare the pandasim objects
     pandasim_biased = panda_fk.PandaSimForwardKin(bullet_client=p,
                                                                base_offset=base_offset,
                                                                base_orientation=base_orientation,
@@ -250,11 +223,11 @@ for rep in range(reps):
     if alg == 'CRiSP':
         s = hyperparams[rep][0]
         v = hyperparams[rep][1]
+
         if config.has_option('Alg Params', 'name'):
             save_name = config['Alg Params']['name']
         else:
             save_name=f'CRiSP_PANDA_{samples}pts.pickle'
-
 
         forward_biased = pandasim_biased.compute_forward_kin
 
@@ -270,15 +243,42 @@ for rep in range(reps):
                         pos_dimensionality=3)
 
         if train_flag:
-            model.fit(X=xtr, y=ytr,
-                      falkon=falkon_flag,
-                      Xte=xte,
-                      leverage_scores=config['Alg Params'].getboolean('leverage_scores'),
-                      out=log.info,
-                      krls_flag=krls_flag)
+        # Train new model
+
+            if xtr.shape[0] > 5000:
+                while "The answer is invalid":
+                    res = str(input("WARNING: The number of training points is n = " + str(xtr.shape[0]) + ". Training will require " + str(xtr.shape[0] ** 2 * 8) + " Bytes in RAM to compute the kernel matrix. Do you want to continue? (Enter y/n) ")).lower().strip()
+                    if res[:1] == 'y':
+                        model.fit(X=xtr, y=ytr,
+                                  falkon=falkon_flag,
+                                  Xte=xte,
+                                  leverage_scores=config['Alg Params'].getboolean('leverage_scores'),
+                                  out=log.info,
+                                  krls_flag=krls_flag)
+                        print("Training...")
+                        break
+
+                    elif res[:1] == 'n':
+                        print("Quitting...")
+                        sys.exit()
+
+                    else:
+                        print("The answer is invalid")
+
+            else:
+                print("Training...")
+                model.fit(X=xtr, y=ytr,
+                          falkon=falkon_flag,
+                          Xte=xte,
+                          leverage_scores=config['Alg Params'].getboolean('leverage_scores'),
+                          out=log.info,
+                          krls_flag=krls_flag)
+
             if save_model_flag:
                 model.save(output_folder, save_name)
+
         else:
+            # Load saved model
             model.load_state(Path(config['Data']['model']))
 
     elif alg == 'OC_SVM':
@@ -325,13 +325,14 @@ for rep in range(reps):
             model.load_state_dict(torch.load(Path(config['Data']['model']), map_location=device))
             # model = model.to(device)
 
+
     # %%------------- Predict trajectory and save data for best model----------##
 
     forward = pandasim.compute_forward_kin
     if isinstance(xte, dict):
         for traj_name, traj in xte.items():
             log.info(f"#----- Trajectory {traj_name} -----#")
-            results_CRiSP[traj_name] = predict_save_panda_trajectory_CRiSP(traj, model.predict, forward, log.info, s, v, alg)
+            results_CRiSP[traj_name] = predict_panda_trajectory_CRiSP(traj, model.predict, forward, log.info, s, v, alg)
             if not save_alpha:
                 results_CRiSP[traj_name]['alpha'] = np.array([])
             if not save_Kx:
@@ -340,33 +341,39 @@ for rep in range(reps):
                 best[traj_name]['rmse'] =  results_CRiSP[traj_name]['rmse']
                 best[traj_name]['hyperparams'] = (s,v)
                 best[traj_name]['results'] = results_CRiSP[traj_name]
+
         ## Compute ik with PyBullet just at the first repetition (it's deterministic)
         if rep == 0:
             for traj_name, traj in xte.items():
                 log.info(f"#----- Trajectory {traj_name} -----#")
-                results_PB[traj_name] = predict_save_panda_trajectory_PB(traj, pandasim_biased.compute_inverse_kin, forward, log.info, s, v, alg)
+                results_PB[traj_name] = predict_panda_trajectory_PB(traj, pandasim_biased.compute_inverse_kin, forward, log.info, s, v, alg)
                 if not save_alpha:
                     results_PB[traj_name]['alpha'] = np.array([])
                 if not save_Kx:
                     results_PB[traj_name]['Kx'] = np.array([])
 
     else:
-        results_CRiSP = predict_save_panda_trajectory_CRiSP(xte, model.predict, forward, log.info, s, v, alg)
+        results_CRiSP = predict_panda_trajectory_CRiSP(xte, model.predict, forward, log.info, s, v, alg)
         if best['rmse'] > results_CRiSP['rmse']:
             best['rmse'] = results_CRiSP['rmse']
             best['hyperparams'] = (s, v)
             best['results'] = results_CRiSP
+
         ## Compute ik with PyBullet just at the first repetition (it's deterministic)
         if rep == 0:
             for traj_name, traj in xte.items():
                 log.info(f"#----- Trajectory {traj_name} -----#")
-                results_PB = predict_save_panda_trajectory_PB(traj, pandasim_biased.compute_inverse_kin, forward, log.info, s, v, alg)
+                results_PB = predict_panda_trajectory_PB(traj, pandasim_biased.compute_inverse_kin, forward, log.info, s, v, alg)
                 if not save_alpha:
                     results_PB['alpha'] = np.array([])
                 if not save_Kx:
                     results_PB['Kx'] = np.array([])
 
+# Save results, including predicted trajectories
+np.savez(str(output_folder) + "/results_CRiSP.npz", results_CRiSP)
+
 os.remove(model_file)
+
 log.info("\n#=================================================================#\n")
 if isinstance(xte, dict):
     log.info("Best parameters for every trajectory:")
