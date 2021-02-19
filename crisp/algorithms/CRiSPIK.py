@@ -219,6 +219,27 @@ class CRiSPIK(BaseEstimator):
         return y_hat, data
 
 
+    ### Euclidean Loss
+    def f_Euclidean(self, x, alpha, ytr):
+        """ Functional to be minimized for Consistent Regularized Structured Prediction.
+        Reference:
+        Ciliberto, Carlo, Lorenzo Rosasco, and Alessandro Rudi.
+        "A consistent regularization approach for structured prediction."
+        Advances in neural information processing systems. 2016.."""
+        if x.ndim == 1:
+            x = x[np.newaxis, :]
+        return np.dot(alpha, self.delta_Euclidean(x, ytr))
+
+    def grad_f_Euclidean(self, x, alpha, ytr):
+        """Returns gradient of self.f"""
+        if x.ndim == 1:
+            x = x[np.newaxis, :]
+        return 2*np.dot(alpha, x-ytr)
+
+    def delta_Euclidean(self, y0, y1):
+        """ "Structured" loss """
+        return sqdist(y0, y1)
+
 
     #### Radians Loss #####
     def f_circle(self, x, alpha, ytr):

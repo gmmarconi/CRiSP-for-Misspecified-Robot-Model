@@ -41,11 +41,24 @@ robot or on the planar manipulator.
 Both scripts read a configuration file (two samples of which are in the
   corresponding folder) and perform the experiment accordingly.
 
-To launch the script, change directory to `experiments script` and use:
+To launch the script, change directory to `experiments_scripts` and use:
 
- `$ python planar manipulator demo.py -config path/to/config.ini`
+- Planar maniputator: `$ python planar_manipulator_demo.py -config path/to/config.ini`
+- Panda maniputator: `$ python panda_demo.py -config path/to/config.ini`
 
 Where `config.ini` is a configuration file defining the experiment details.
+
+### Rendering pre-computed Panda trajectory
+
+Reproducing the Panda arm experiments requires 9.8GB of RAM for storing the full kernel matrix.
+For convenience, we also provide a CRiSP-precomputed predicted trajectory in `experiments_scripts/outputs/panda_medium_cube/results_CRiSP.npz`
+and a script for rendering the result in `PyBullet` in `experiments_scripts/render_panda_results.py`.
+
+To render the predicted trajectory, change directory to `experiments_scripts` and run:
+
+```
+$ python render_panda_results.py
+```
 
 ### Configuration file
 
@@ -77,7 +90,7 @@ Boolean entries can be defined with either `0/no/false` or `1/yes/true`.
 - `log_filename`: Path to a log file where the scripts outputs informations
 - `output_folder`: folder where the scripts saves the results of the experiments
 
-##### Only for `plana manipulator demo`
+##### Only for `planar manipulator demo`
 - `plot_dataset`: if `yes`, plots the generated dataset in `output_folder`
 - `make_gif`: makes a gif of the reconstructed trajectory
 
