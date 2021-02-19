@@ -4,8 +4,8 @@ import numpy as np
 import warnings
 import pybullet as p
 import pybullet_data as pd
-import experiments.panda_sandbox.inverse_kin_utils_3D as iku3d
-import experiments.panda_sandbox.panda_sample_cartesian_traj_sim as panda_sample_cartesian_traj_sim
+# import experiments.panda_sandbox.inverse_kin_utils_3D as iku3d
+# import experiments.panda_sandbox.panda_sample_cartesian_traj_sim as panda_sample_cartesian_traj_sim
 import time
 from scipy.io import loadmat, savemat
 
@@ -72,7 +72,7 @@ trajectory_target_orn = np.zeros((n,3))
 for k in range(n):
 
     # Get k-th joints configuration and EE pose
-    joints_configuration = trajectories[traj_name]['predictions'][k, :]
+    joints_configuration = trajectories[traj_name]['trajectory_joints_pred_CRiSP'][k, :]
     ee_pos_dset = trajectories[traj_name]['xte'][k, :3]
     ee_orn_dset = trajectories[traj_name]['xte'][k, 3:]
 
