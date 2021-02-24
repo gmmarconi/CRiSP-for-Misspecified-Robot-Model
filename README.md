@@ -28,7 +28,7 @@ To install the Anaconda environment for this project, run in the shell
 
 activate it with
 
-`$ conda activate inverkin_struct`
+`$ conda activate CRiSP-ik`
 
 and verify it is correctly installed
 
