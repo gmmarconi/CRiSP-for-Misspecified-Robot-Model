@@ -4,8 +4,6 @@ Repository for:
 
 _Gian Maria Marconi*, Raffaello Camoriano*, Lorenzo Rosasco, and Carlo Ciliberto, "Structured  Prediction  for  CRiSP  Inverse  Kinematics  Learning with  Misspecified  Robot  Models", IEEE Robotics and Automation Letters (RA-L) and IEEE International Conference on Robotics and Automation (ICRA) 2021 (to appear)_; Pre-print: https://arxiv.org/abs/2102.12942
 
-Tested on Ubuntu 20.04
-
 >**Abstract**
 >
 > With the recent advances in machine learning, problems that traditionally would require accurate modeling to be solved analytically can now be successfully approached with data-driven strategies. Among these, computing the inverse kinematics of a redundant robot arm poses a significant challenge due to the non-linear structure of the robot, the hard joint constraints and the non-invertible kinematics map. Moreover, most learning algorithms consider a completely data-driven approach, while often useful information on the structure of the robot is available and should be positively exploited.
@@ -13,6 +11,8 @@ In this work, we present a simple, yet effective, approach for learning the inve
 
 
 ## Environment set-up
+
+Tested on Ubuntu 18.04 and 20.04
 
 We recommend using Anaconda for managing your environments
 
