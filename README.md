@@ -1,6 +1,8 @@
 # Structured Kinematics
 
-Repository for Structured  Prediction  for  CRiSP  Inverse  Kinematics  Learning with  Misspecified  Robot  Models.
+Repository for:
+
+_Gian Maria Marconi*, Raffaello Camoriano*, Lorenzo Rosasco, and Carlo Ciliberto, "Structured  Prediction  for  CRiSP  Inverse  Kinematics  Learning with  Misspecified  Robot  Models", IEEE Robotics and Automation Letters (RA-L) and IEEE International Conference on Robotics and Automation (ICRA) 2021 (to appear)_; Pre-print: https://arxiv.org/abs/2102.12942
 
 Tested on Ubuntu 20.04
 
